@@ -1,12 +1,17 @@
 package com.winestore.service;
 
 import static org.junit.Assert.assertEquals;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.MockitoJUnitRunner;
@@ -28,10 +33,31 @@ public class CustomerServiceTest {
 	private CustomerRepository repository;
 
 	@Test
-	public void save_givenCustomer_whenNullIdAndFilledNameAndDocument_thenSave() {
-		service.save(mockCustomerDTO());
+	public void save_givenCustomer_whenNullIdAndFilledNameAndDocument_thenInsert() {
+		when(repository.findById(any())).thenReturn(Optional.ofNullable(null));
+		when(repository.save(any())).thenReturn(mockCustomer(1L));
+		service.save(mockCustomerDTO(null));
+		
+		ArgumentCaptor<Customer> argument = ArgumentCaptor.forClass(Customer.class);
+		verify(repository).save(argument.capture());
+		
+		assertEquals("Diogo Reis", argument.getValue().getName());
+		assertEquals("01234567890", argument.getValue().getDocument());
 	}
 
+	@Test
+	public void save_givenCustomer_whenHasIdNameAndDocument_thenUpdate() {		
+		when(repository.findById(any())).thenReturn(Optional.of(mockCustomer(1L)));
+		when(repository.save(any())).thenReturn(mockCustomer(1L));
+		service.save(mockCustomerDTO(1L));
+		
+		ArgumentCaptor<Customer> argument = ArgumentCaptor.forClass(Customer.class);
+		verify(repository).save(argument.capture());
+		
+		assertEquals("Diogo Reis", argument.getValue().getName());
+		assertEquals("01234567890", argument.getValue().getDocument());
+	}
+	
 	@Test
 	public void listCustomersOrderByBiggerBuy_giveCustomerList_whenNull_thenReturnAnEmptyList() {
 		List<Customer> nullCustomers = service.listCustomersOrderByBiggerBuy(null);
@@ -52,10 +78,14 @@ public class CustomerServiceTest {
 //		assertEquals(new ArrayList<Customer>(), emptyCustomers);
 	}
 
-	private CustomerDTO mockCustomerDTO() {
-		return new CustomerDTO(null, "Diogo Reis", "01234567890");
+	private Customer mockCustomer(Long id) {
+		return new Customer(id, "Diogo Reis", "01234567890");
 	}
 
+	private CustomerDTO mockCustomerDTO(Long id) {
+		return new CustomerDTO(id, "Diogo Reis", "01234567890");
+	}
+	
 	private List<Customer> mockCustomerList() {
 		ProductDTO prod1 = new ProductDTO("Casa Silva Reserva", "Cabernet Sauvignon", "Chile",  "Tinto", "2014", 79D);
 		ProductDTO prod2 = new ProductDTO("Punto Final Etiqueta Negra", "Malbec", "Argentina",  "Tinto", "2012", 59.9D);

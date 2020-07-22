@@ -24,17 +24,18 @@ public class CustomerService {
 	@Autowired
 	private CustomerRepository repository;
 	
-	@Autowired
-	private CustomerMapper mapper;
-
 	@Transactional
 	public void save(CustomerDTO dto) {
-		Customer customer = findById(dto.getId());
+		Customer entity = findById(dto.getId());
 
-		if (null == customer) {
-			customer = repository.save(mapper.map(dto));
-			log.info(customer.toString());
+		if (null != entity && !entity.getDocument().equalsIgnoreCase(dto.getCpf())) {
+			log.info("Customer of document={} and name={}, wasn't update because this document belongs to another customer, with id={} "
+					, dto.getCpf(), dto.getNome(), entity.getId());
+			return;
 		}
+
+		repository.save(CustomerMapper.map(dto));
+		log.info("Customer ".concat(null == entity ? "created" : "updated"));
 	}
 
 	public Customer findById(Long id) {
