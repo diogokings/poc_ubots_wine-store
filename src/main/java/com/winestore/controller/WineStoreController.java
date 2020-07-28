@@ -9,6 +9,7 @@ import org.springframework.web.client.RestTemplate;
 import com.winestore.dto.CustomerDTO;
 import com.winestore.dto.SaleDTO;
 import com.winestore.service.CustomerService;
+import com.winestore.service.SaleService;
 
 import lombok.extern.slf4j.Slf4j;
 
@@ -22,6 +23,9 @@ public class WineStoreController {
 	@Autowired
 	private CustomerService customerService;
 
+	@Autowired
+	private SaleService saleService;
+
 	@Bean
 	public RestTemplate restTemplate(RestTemplateBuilder builder) {
 		return builder.build();
@@ -30,16 +34,19 @@ public class WineStoreController {
 	public void consume() {
 		CustomerDTO[] customers = restTemplate(new RestTemplateBuilder()).getForObject(CUSTOMERS_LIST, CustomerDTO[].class);
 
-		for (CustomerDTO dto : customers) {
-			log.info("trying to save/update:".concat(dto.toString()));
-			customerService.save(dto);
+		for (CustomerDTO customerDTO : customers) {
+			log.info("trying to save/update:".concat(customerDTO.toString()));
+			customerService.save(customerDTO);
 		}
 
 		SaleDTO[] sales = restTemplate(new RestTemplateBuilder()).getForObject(SALES_HISTORY, SaleDTO[].class);
 
-		for (SaleDTO sale : sales) {
-			log.info(sale.toString());
+		for (SaleDTO saleDTO : sales) {
+			log.info("trying to save/update:".concat(saleDTO.toString()));
+			saleService.save(saleDTO);
 		}
+		
+		saleService.listCustomersOrderByBiggerBuy();
 
 	}
 

@@ -18,5 +18,6 @@ public class SaleDTO {
 	private String data;
 	private String cliente;
 	private ProductDTO[] itens;
+	private Double valorTotal;
 
 }

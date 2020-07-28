@@ -2,7 +2,6 @@ package com.winestore.service;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 
 import javax.transaction.Transactional;
 
@@ -13,7 +12,6 @@ import com.winestore.dao.CustomerRepository;
 import com.winestore.domain.Customer;
 import com.winestore.domain.Product;
 import com.winestore.dto.CustomerDTO;
-import com.winestore.mapper.CustomerMapper;
 
 import lombok.extern.slf4j.Slf4j;
 
@@ -23,42 +21,68 @@ public class CustomerService {
 
 	@Autowired
 	private CustomerRepository repository;
-	
+
 	@Transactional
-	public void save(CustomerDTO dto) {
-		Customer entity = findById(dto.getId());
+	public void save(CustomerDTO customerDTO) {
+		String document = formatDocumentToOnlyNumbers(customerDTO.getCpf());
+		Customer customer = findByDocument(document);
 
-		if (null != entity && !entity.getDocument().equalsIgnoreCase(dto.getCpf())) {
-			log.info("Customer of document={} and name={}, wasn't update because this document belongs to another customer, with id={} "
-					, dto.getCpf(), dto.getNome(), entity.getId());
-			return;
+		if (null != customer) {
+			if (customer.getId() == customerDTO.getId()) {
+				customer.setName(customerDTO.getNome());
+				repository.save(customer);
+				log.info("Customer updated");
+
+			} else {
+				log.info(
+						"Customer of id={}, document={} and name={}, wasn't update. This document belongs to customer with id={} ",
+						customerDTO.getId(), customerDTO.getCpf(), customerDTO.getNome(), customer.getId());
+			}
+
+		} else {
+			repository.save(Customer.builder().name(customerDTO.getNome()).document(document).build());
+			log.info("Customer created");
+		}
+	}
+
+	@Transactional
+	private Customer saveAsAnonymous(String document) {
+		return repository.save(new Customer(null, "NOT_REGISTERED", document));
+	}
+
+	private Customer findByDocument(String document) {
+		return repository.findByDocument(document).orElse(null);
+	}
+
+	public Customer getCustomer(String document) {
+		document = formatDocumentToOnlyNumbers(document);
+		Customer customer = findByDocument(document);
+
+		if (null == customer) {
+			customer = saveAsAnonymous(document);
 		}
 
-		repository.save(CustomerMapper.map(dto));
-		log.info("Customer ".concat(null == entity ? "created" : "updated"));
+		return customer;
 	}
 
-	public Customer findById(Long id) {
-		Optional<Customer> entity = repository.findById(id);
-		return entity.orElse(null);
-	}
+	private String formatDocumentToOnlyNumbers(String document) {
+		String onlyNumbersDoc = document.replaceAll("[^0-9]", "");
 
-	public List<Customer> listCustomersOrderByBiggerBuy(List<Customer> customers) {
-		if(null == customers || customers.isEmpty()) {
-			return new ArrayList<Customer>();
+		if (onlyNumbersDoc.length() > 11) {
+			int endIndex = onlyNumbersDoc.length();
+			int startIndex = endIndex - 11;
+			onlyNumbersDoc = onlyNumbersDoc.substring(startIndex, endIndex);
+			log.warn("Customer document with more than 11 digits. Document replaced from={} to={}", document,
+					onlyNumbersDoc);
+		} else if (onlyNumbersDoc.length() < 11) {
+			log.warn("Customer document with less than 11 digits. Document used anyway!");			
 		}
-		return null;
-	}
-	
-	public Customer findCustomerWithBiggerBuyInYear() {
-		return null;
-	}
 
-	public List<Customer> listLoyalCustomers() {
-		return null;
+		return onlyNumbersDoc;
 	}
 
 	public Product findWineToFitCustomerTaste(Customer customer) {
 		return null;
 	}
+
 }

@@ -8,7 +8,7 @@ import org.springframework.stereotype.Repository;
 import com.winestore.domain.Customer;
 
 @Repository
-public interface CustomerRepository extends JpaRepository<Customer, Long>{
+public interface TodoRepository extends JpaRepository<Customer, Long>{
 
 	Optional<Customer> findByDocument(String document);
 
